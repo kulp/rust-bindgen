@@ -813,6 +813,16 @@ impl ClangToken {
         };
         c_str.to_bytes()
     }
+
+    /// Tests whether a token's right boundary (CXSourceLocation) is the same as
+    /// the next token's left boundary, meaning they have no intervening
+    /// whitespace.
+    pub fn is_abutting(&self, next: &ClangToken) -> bool {
+        // This comparison makes an narrow assumption about the internal data
+        // format of CXSourceLocation. A more explicit and costly check might
+        // use clang_getSpellingLocation().
+        self.extent.end_int_data == next.extent.begin_int_data
+    }
 }
 
 impl Drop for ClangToken {

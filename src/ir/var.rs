@@ -320,6 +320,21 @@ fn parse_macro(
 ) -> Option<(Vec<u8>, cexpr::expr::EvalResult)> {
     use cexpr::expr;
 
+    // cexpr explicitly does not handle function-like macros, except for a
+    // degenerate case in which it behaves in a non-conformant way. We prevent
+    // cexpr from ever seeing function-like macros by checking for a parenthesis
+    // token immediately adjacent to (that is, abutting) the first token in the
+    // macro definition.
+    let tokens = cursor.tokens();
+    let mut tokens = tokens.iter().fuse();
+    match (tokens.next(), tokens.next()) {
+        // TODO check second macro's type and content
+        (Some(first), Some(second)) if first.is_abutting(&second) => {
+            return None;
+        },
+        _ => {},
+    }
+
     let mut cexpr_tokens = cursor.cexpr_tokens();
 
     let parser = expr::IdentifierParser::new(ctx.parsed_macros());

@@ -149,6 +149,40 @@ impl ClangSubItemParser for Var {
                     }
                 }
 
+                // cexpr explicitly does not handle function-like macros, except
+                // for a degenerate case in which it behaves in a non-conformant
+                // way. We prevent cexpr from ever seeing function-like macros
+                // by checking for a parenthesis token immediately adjacent to
+                // (that is, abutting) the first token in the macro definition.
+                let tokens: Vec<_> = cursor.tokens().iter().collect();
+                match tokens.get(0..2) {
+                    // TODO check second macro's type and content
+                    Some([first, second]) if first.is_abutting(&second) => {
+                        if let Some(callbacks) = ctx.parse_callbacks() {
+                            let joined: Vec<_> = tokens
+                                .into_iter()
+                                .map(|t| t.spelling().to_owned())
+                                .collect();
+                            let boundary = joined
+                                .iter()
+                                .position(|s| s == b")")
+                                .map(|n| n + 1)
+                                .unwrap_or(joined.len());
+                            let (left, right) = joined.split_at(boundary);
+                            let left = String::from_utf8(left.concat());
+                            let right = String::from_utf8(right.join(&b' '));
+                            match (left, right) {
+                                (Ok(left), Ok(right)) => {
+                                    callbacks.func_macro(&left, &right)
+                                }
+                                _ => {} // TODO handle utf8 failure ?
+                            }
+                        }
+                        return Err(ParseError::Continue);
+                    }
+                    _ => {}
+                }
+
                 let value = parse_macro(ctx, &cursor);
 
                 let (id, value) = match value {
@@ -319,21 +353,6 @@ fn parse_macro(
     cursor: &clang::Cursor,
 ) -> Option<(Vec<u8>, cexpr::expr::EvalResult)> {
     use cexpr::expr;
-
-    // cexpr explicitly does not handle function-like macros, except for a
-    // degenerate case in which it behaves in a non-conformant way. We prevent
-    // cexpr from ever seeing function-like macros by checking for a parenthesis
-    // token immediately adjacent to (that is, abutting) the first token in the
-    // macro definition.
-    let tokens = cursor.tokens();
-    let mut tokens = tokens.iter().fuse();
-    match (tokens.next(), tokens.next()) {
-        // TODO check second macro's type and content
-        (Some(first), Some(second)) if first.is_abutting(&second) => {
-            return None;
-        },
-        _ => {},
-    }
 
     let mut cexpr_tokens = cursor.cexpr_tokens();
 

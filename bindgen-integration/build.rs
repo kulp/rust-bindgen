@@ -81,6 +81,19 @@ impl ParseCallbacks for MacroCallback {
             "TESTMACRO_NONFUNCTIONAL" => {
                 panic!("func_macro was called for a non-functional macro");
             }
+            "TESTMACRO_FUNCTIONAL_NONEMPTY(TESTMACRO_INTEGER)" => {
+                // Spaces are inserted into the right-hand side of a functional
+                // macro during reconstruction from the tokenization. This might
+                // change in the future, but it is safe by the definition of a
+                // token in C, whereas leaving the spaces out could change
+                // tokenization.
+                assert_eq!(value, "- TESTMACRO_INTEGER");
+                *self.seen_funcs.lock().unwrap() += 1;
+            }
+            "TESTMACRO_FUNCTIONAL_EMPTY(TESTMACRO_INTEGER)" => {
+                assert_eq!(value, "");
+                *self.seen_funcs.lock().unwrap() += 1;
+            }
             _ => {} // The system might provide lots of functional macros
         }
     }
@@ -95,7 +108,7 @@ impl Drop for MacroCallback {
         );
         assert_eq!(
             *self.seen_funcs.lock().unwrap(),
-            0,
+            2,
             "func_macro handle was not called once for all relevant macros"
         );
     }

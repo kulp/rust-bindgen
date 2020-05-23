@@ -76,7 +76,7 @@ impl ParseCallbacks for MacroCallback {
         }
     }
 
-    fn func_macro(&self, name: &str, value: &str) {
+    fn func_macro(&self, name: &str, value: &[u8]) {
         match name {
             "TESTMACRO_NONFUNCTIONAL" => {
                 panic!("func_macro was called for a non-functional macro");
@@ -87,19 +87,19 @@ impl ParseCallbacks for MacroCallback {
                 // change in the future, but it is safe by the definition of a
                 // token in C, whereas leaving the spaces out could change
                 // tokenization.
-                assert_eq!(value, "- TESTMACRO_INTEGER");
+                assert_eq!(value, b"- TESTMACRO_INTEGER");
                 *self.seen_funcs.lock().unwrap() += 1;
             }
             "TESTMACRO_FUNCTIONAL_EMPTY(TESTMACRO_INTEGER)" => {
-                assert_eq!(value, "");
+                assert_eq!(value, b"");
                 *self.seen_funcs.lock().unwrap() += 1;
             }
             "TESTMACRO_FUNCTIONAL_TOKENIZED(a,b,c,d,e)" => {
-                assert_eq!(value, "a / b c d ## e");
+                assert_eq!(value, b"a / b c d ## e");
                 *self.seen_funcs.lock().unwrap() += 1;
             }
             "TESTMACRO_FUNCTIONAL_SPLIT(a,b)" => {
-                assert_eq!(value, "b , a");
+                assert_eq!(value, b"b , a");
                 *self.seen_funcs.lock().unwrap() += 1;
             }
             _ => {

@@ -132,10 +132,12 @@ fn default_macro_constant_type(value: i64) -> IntKind {
 
 /// Determines whether a cursor that is pointing into a CXCursor_MacroDefinition
 /// is pointing into a function-like macro. If so, calls the func_macro callback
-/// and returns Err(ParseError::Continue) to signal to skip further processing.
+/// and returns `Err(ParseError::Continue)` to signal to skip further
+/// processing.  If version to UTF-8 fails (it is performed only where it should
+/// be infallible), then `Err(ParseError::Continue)` is returned as well.
 fn handle_function_macro(
     cursor: &clang::Cursor,
-    func_macro: impl FnOnce(&str, &str),
+    func_macro: impl FnOnce(&str, &[u8]),
 ) -> Result<(), ParseError> {
     // cexpr explicitly does not handle function-like macros, except for a
     // degenerate case in which it behaves in a non-conformant way. We prevent
@@ -157,13 +159,10 @@ fn handle_function_macro(
                 .unwrap_or(joined.len());
 
             let (left, right) = joined.split_at(boundary);
-            let left = String::from_utf8(left.concat());
-            let right = String::from_utf8(right.join(&b' '));
-            if let (Ok(left), Ok(right)) = (left, right) {
-                func_macro(&left, &right)
-            } else {
-                // TODO handle utf8 failure ?
-            }
+            let left = String::from_utf8(left.concat())
+                .map_err(|_| ParseError::Continue)?;
+            let right = right.join(&b' ');
+            func_macro(&left, &right);
 
             // We handled the macro, skip future macro processing.
             Err(ParseError::Continue)

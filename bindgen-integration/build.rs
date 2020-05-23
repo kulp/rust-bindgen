@@ -46,6 +46,10 @@ impl ParseCallbacks for MacroCallback {
 
     fn str_macro(&self, name: &str, value: &[u8]) {
         match name {
+            "TESTMACRO_STRING_EXPR" => {
+                assert_eq!(value, b"string");
+                *self.seen_hellos.lock().unwrap() += 1;
+            }
             "TESTMACRO_STRING_EXPANDED" |
             "TESTMACRO_STRING" |
             "TESTMACRO_INTEGER" => {
@@ -71,13 +75,22 @@ impl ParseCallbacks for MacroCallback {
             _ => None,
         }
     }
+
+    fn func_macro(&self, name: &str, value: &str) {
+        match name {
+            "TESTMACRO_NONFUNCTIONAL" => {
+                panic!("func_macro was called for a non-functional macro");
+            }
+            _ => {} // The system might provide lots of functional macros
+        }
+    }
 }
 
 impl Drop for MacroCallback {
     fn drop(&mut self) {
         assert_eq!(
             *self.seen_hellos.lock().unwrap(),
-            2,
+            3,
             "str_macro handle was not called once for all relevant macros"
         );
         assert_eq!(

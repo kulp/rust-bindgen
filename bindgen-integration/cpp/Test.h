@@ -7,6 +7,13 @@
 #define TESTMACRO_STRING_EXPANDED TESTMACRO_STRING
 #define TESTMACRO_CUSTOMINTKIND_PATH 123
 
+// The following two macros are parsed the same by cexpr, but are semantically
+// different.
+#define TESTMACRO_NONFUNCTIONAL (TESTMACRO_INTEGER)
+#define TESTMACRO_FUNCTIONAL_EMPTY(TESTMACRO_INTEGER)
+//#define TESTMACRO_INVALID("string") // A conforming preprocessor rejects this
+#define TESTMACRO_STRING_EXPR ("string")
+
 #include <cwchar>
 
 enum {

@@ -134,8 +134,8 @@ fn default_macro_constant_type(value: i64) -> IntKind {
 /// is pointing into a function-like macro. If so, calls the func_macro callback
 /// and returns Err(ParseError::Continue) to signal to skip further processing.
 fn handle_function_macro(
-    ctx: &BindgenContext,
     cursor: &clang::Cursor,
+    func_macro: impl FnOnce(&str, &str),
 ) -> Result<(), ParseError> {
     // cexpr explicitly does not handle function-like macros, except for a
     // degenerate case in which it behaves in a non-conformant way. We prevent
@@ -146,25 +146,21 @@ fn handle_function_macro(
     match tokens.get(0..2) {
         // TODO check second macro's type and content
         Some([first, second]) if first.is_abutting(&second) => {
-            if let Some(callbacks) = ctx.parse_callbacks() {
-                let joined: Vec<_> = tokens
-                    .into_iter()
-                    .map(|t| t.spelling().to_owned())
-                    .collect();
-                let boundary = joined
-                    .iter()
-                    .position(|s| s == b")")
-                    .map(|n| n + 1) // skip past ')'
-                    .unwrap_or(joined.len());
-                let (left, right) = joined.split_at(boundary);
-                let left = String::from_utf8(left.concat());
-                let right = String::from_utf8(right.join(&b' '));
-                match (left, right) {
-                    (Ok(left), Ok(right)) => {
-                        callbacks.func_macro(&left, &right)
-                    }
-                    _ => {} // TODO handle utf8 failure ?
-                }
+            let joined: Vec<_> = tokens
+                .into_iter()
+                .map(|t| t.spelling().to_owned())
+                .collect();
+            let boundary = joined
+                .iter()
+                .position(|s| s == b")")
+                .map(|n| n + 1) // skip past ')'
+                .unwrap_or(joined.len());
+            let (left, right) = joined.split_at(boundary);
+            let left = String::from_utf8(left.concat());
+            let right = String::from_utf8(right.join(&b' '));
+            match (left, right) {
+                (Ok(left), Ok(right)) => func_macro(&left, &right),
+                _ => {} // TODO handle utf8 failure ?
             }
             Err(ParseError::Continue)
         }
@@ -189,9 +185,11 @@ impl ClangSubItemParser for Var {
                         }
                         MacroParsingBehavior::Default => {}
                     }
-                }
 
-                handle_function_macro(ctx, &cursor)?;
+                    handle_function_macro(&cursor, |left, right| {
+                        callbacks.func_macro(left, right)
+                    })?;
+                }
 
                 let value = parse_macro(ctx, &cursor);
 

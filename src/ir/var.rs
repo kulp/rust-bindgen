@@ -130,6 +130,48 @@ fn default_macro_constant_type(value: i64) -> IntKind {
     }
 }
 
+/// Determines whether a cursor that is pointing into a CXCursor_MacroDefinition
+/// is pointing into a function-like macro. If so, calls the func_macro callback
+/// and returns Err(ParseError::Continue) to signal to skip further processing.
+fn handle_function_macro(
+    ctx: &BindgenContext,
+    cursor: &clang::Cursor,
+) -> Result<(), ParseError> {
+    // cexpr explicitly does not handle function-like macros, except for a
+    // degenerate case in which it behaves in a non-conformant way. We prevent
+    // cexpr from ever seeing function-like macros by checking for a parenthesis
+    // token immediately adjacent to (that is, abutting) the first token in the
+    // macro definition.
+    let tokens: Vec<_> = cursor.tokens().iter().collect();
+    match tokens.get(0..2) {
+        // TODO check second macro's type and content
+        Some([first, second]) if first.is_abutting(&second) => {
+            if let Some(callbacks) = ctx.parse_callbacks() {
+                let joined: Vec<_> = tokens
+                    .into_iter()
+                    .map(|t| t.spelling().to_owned())
+                    .collect();
+                let boundary = joined
+                    .iter()
+                    .position(|s| s == b")")
+                    .map(|n| n + 1) // skip past ')'
+                    .unwrap_or(joined.len());
+                let (left, right) = joined.split_at(boundary);
+                let left = String::from_utf8(left.concat());
+                let right = String::from_utf8(right.join(&b' '));
+                match (left, right) {
+                    (Ok(left), Ok(right)) => {
+                        callbacks.func_macro(&left, &right)
+                    }
+                    _ => {} // TODO handle utf8 failure ?
+                }
+            }
+            Err(ParseError::Continue)
+        }
+        _ => Ok(()),
+    }
+}
+
 impl ClangSubItemParser for Var {
     fn parse(
         cursor: clang::Cursor,
@@ -149,39 +191,7 @@ impl ClangSubItemParser for Var {
                     }
                 }
 
-                // cexpr explicitly does not handle function-like macros, except
-                // for a degenerate case in which it behaves in a non-conformant
-                // way. We prevent cexpr from ever seeing function-like macros
-                // by checking for a parenthesis token immediately adjacent to
-                // (that is, abutting) the first token in the macro definition.
-                let tokens: Vec<_> = cursor.tokens().iter().collect();
-                match tokens.get(0..2) {
-                    // TODO check second macro's type and content
-                    Some([first, second]) if first.is_abutting(&second) => {
-                        if let Some(callbacks) = ctx.parse_callbacks() {
-                            let joined: Vec<_> = tokens
-                                .into_iter()
-                                .map(|t| t.spelling().to_owned())
-                                .collect();
-                            let boundary = joined
-                                .iter()
-                                .position(|s| s == b")")
-                                .map(|n| n + 1)
-                                .unwrap_or(joined.len());
-                            let (left, right) = joined.split_at(boundary);
-                            let left = String::from_utf8(left.concat());
-                            let right = String::from_utf8(right.join(&b' '));
-                            match (left, right) {
-                                (Ok(left), Ok(right)) => {
-                                    callbacks.func_macro(&left, &right)
-                                }
-                                _ => {} // TODO handle utf8 failure ?
-                            }
-                        }
-                        return Err(ParseError::Continue);
-                    }
-                    _ => {}
-                }
+                handle_function_macro(ctx, &cursor)?;
 
                 let value = parse_macro(ctx, &cursor);
 

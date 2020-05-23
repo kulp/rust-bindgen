@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex, RwLock};
 struct MacroCallback {
     macros: Arc<RwLock<HashSet<String>>>,
     seen_hellos: Mutex<u32>,
+    seen_funcs: Mutex<u32>,
 }
 
 impl ParseCallbacks for MacroCallback {
@@ -78,7 +79,12 @@ impl Drop for MacroCallback {
             *self.seen_hellos.lock().unwrap(),
             2,
             "str_macro handle was not called once for all relevant macros"
-        )
+        );
+        assert_eq!(
+            *self.seen_funcs.lock().unwrap(),
+            0,
+            "func_macro handle was not called once for all relevant macros"
+        );
     }
 }
 
@@ -102,6 +108,7 @@ fn main() {
         .parse_callbacks(Box::new(MacroCallback {
             macros: macros.clone(),
             seen_hellos: Mutex::new(0),
+            seen_funcs: Mutex::new(0),
         }))
         .blacklist_function("my_prefixed_function_to_remove")
         .generate()

@@ -155,13 +155,17 @@ fn handle_function_macro(
                 .position(|s| s == b")")
                 .map(|n| n + 1) // skip past ')'
                 .unwrap_or(joined.len());
+
             let (left, right) = joined.split_at(boundary);
             let left = String::from_utf8(left.concat());
             let right = String::from_utf8(right.join(&b' '));
-            match (left, right) {
-                (Ok(left), Ok(right)) => func_macro(&left, &right),
-                _ => {} // TODO handle utf8 failure ?
+            if let (Ok(left), Ok(right)) = (left, right) {
+                func_macro(&left, &right)
+            } else {
+                // TODO handle utf8 failure ?
             }
+
+            // We handled the macro, skip future macro processing.
             Err(ParseError::Continue)
         }
         _ => Ok(()),

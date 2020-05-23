@@ -98,6 +98,10 @@ impl ParseCallbacks for MacroCallback {
                 assert_eq!(value, "a / b c d ## e");
                 *self.seen_funcs.lock().unwrap() += 1;
             }
+            "TESTMACRO_FUNCTIONAL_SPLIT(a,b)" => {
+                assert_eq!(value, "b , a");
+                *self.seen_funcs.lock().unwrap() += 1;
+            }
             _ => {} // The system might provide lots of functional macros
         }
     }
@@ -112,7 +116,7 @@ impl Drop for MacroCallback {
         );
         assert_eq!(
             *self.seen_funcs.lock().unwrap(),
-            3,
+            4,
             "func_macro handle was not called once for all relevant macros"
         );
     }

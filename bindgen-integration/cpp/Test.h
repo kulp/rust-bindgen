@@ -15,6 +15,9 @@
 // Unusual spacing in the following macro is intentional, to demonstrate
 // reformatting after tokenization.
 #define TESTMACRO_FUNCTIONAL_TOKENIZED(  a, b   ,c,d,e   ) a/b c    d ## e
+#define TESTMACRO_FUNCTIONAL_SPLIT(  a, \
+        b) b,\
+        a
 //#define TESTMACRO_INVALID("string") // A conforming preprocessor rejects this
 #define TESTMACRO_STRING_EXPR ("string")
 

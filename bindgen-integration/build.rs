@@ -102,7 +102,11 @@ impl ParseCallbacks for MacroCallback {
                 assert_eq!(value, "b , a");
                 *self.seen_funcs.lock().unwrap() += 1;
             }
-            _ => {} // The system might provide lots of functional macros
+            _ => {
+                // The system might provide lots of functional macros.
+                // Ensure we did not miss handling one that we meant to handle.
+                assert!(!name.starts_with("TESTMACRO_"), "name = {}", name);
+            }
         }
     }
 }

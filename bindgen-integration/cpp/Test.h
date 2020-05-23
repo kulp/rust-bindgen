@@ -12,6 +12,9 @@
 #define TESTMACRO_NONFUNCTIONAL (TESTMACRO_INTEGER)
 #define TESTMACRO_FUNCTIONAL_EMPTY(TESTMACRO_INTEGER)
 #define TESTMACRO_FUNCTIONAL_NONEMPTY(TESTMACRO_INTEGER)-TESTMACRO_INTEGER
+// Unusual spacing in the following macro is intentional, to demonstrate
+// reformatting after tokenization.
+#define TESTMACRO_FUNCTIONAL_TOKENIZED(  a, b   ,c,d,e   ) a/b c    d ## e
 //#define TESTMACRO_INVALID("string") // A conforming preprocessor rejects this
 #define TESTMACRO_STRING_EXPR ("string")
 

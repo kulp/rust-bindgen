@@ -137,7 +137,7 @@ fn default_macro_constant_type(value: i64) -> IntKind {
 /// be infallible), then `Err(ParseError::Continue)` is returned as well.
 fn handle_function_macro(
     cursor: &clang::Cursor,
-    func_macro: impl FnOnce(&str, &[u8]),
+    func_macro: impl FnOnce(&str, &[&[u8]]),
 ) -> Result<(), ParseError> {
     // cexpr explicitly does not handle function-like macros, except for a
     // degenerate case in which it behaves in a non-conformant way. We prevent
@@ -161,7 +161,7 @@ fn handle_function_macro(
             let (left, right) = joined.split_at(boundary);
             let left = String::from_utf8(left.concat())
                 .map_err(|_| ParseError::Continue)?;
-            let right = right.join(&b' ');
+            let right: Vec<_> = right.iter().map(Vec::as_slice).collect();
             func_macro(&left, &right);
 
             // We handled the macro, skip future macro processing.

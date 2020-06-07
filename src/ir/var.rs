@@ -162,7 +162,15 @@ fn handle_function_macro(
             let left = String::from_utf8(left.concat())
                 .map_err(|_| ParseError::Continue)?;
             let right: Vec<_> = right.iter().map(Vec::as_slice).collect();
-            func_macro(&left, &right);
+            // Drop last token with LLVM < 4.0, due to an LLVM bug.
+            //
+            // See:
+            //   https://bugs.llvm.org//show_bug.cgi?id=9069
+            let right = match (right.len(), crate::clang_version().parsed) {
+                (len, Some((v, _))) if len > 0 && v < 4 => &right[..len - 1],
+                _ => &right[..],
+            };
+            func_macro(&left, right);
 
             // We handled the macro, skip future macro processing.
             Err(ParseError::Continue)

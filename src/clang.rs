@@ -1492,6 +1492,7 @@ impl Iterator for CommentAttributesIterator {
 }
 
 /// A source file.
+#[derive(PartialEq, Eq)]
 pub struct File {
     x: CXFile,
 }

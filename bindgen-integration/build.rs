@@ -87,10 +87,7 @@ impl ParseCallbacks for MacroCallback {
                 // change in the future, but it is safe by the definition of a
                 // token in C, whereas leaving the spaces out could change
                 // tokenization.
-                assert_eq!(
-                    value,
-                    &["-".as_bytes(), "TESTMACRO_INTEGER".as_bytes()]
-                );
+                assert_eq!(value, &[b"-" as &[u8], b"TESTMACRO_INTEGER"]);
                 *self.seen_funcs.lock().unwrap() += 1;
             }
             "TESTMACRO_FUNCTIONAL_EMPTY(TESTMACRO_INTEGER)" => {
@@ -100,11 +97,7 @@ impl ParseCallbacks for MacroCallback {
             "TESTMACRO_FUNCTIONAL_TOKENIZED(a,b,c,d,e)" => {
                 assert_eq!(
                     value,
-                    ["a", "/", "b", "c", "d", "##", "e"]
-                        .iter()
-                        .map(|s| s.as_bytes())
-                        .collect::<Vec<_>>()
-                        .as_slice()
+                    &[b"a" as &[u8], b"/", b"b", b"c", b"d", b"##", b"e"]
                 );
                 *self.seen_funcs.lock().unwrap() += 1;
             }

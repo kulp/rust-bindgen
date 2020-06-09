@@ -207,7 +207,7 @@ impl ClangSubItemParser for Var {
                     })?;
                 }
 
-                let value = parse_macro(ctx, &cursor);
+                let value = parse_macro(ctx, &cursor.cexpr_tokens());
 
                 let (id, value) = match value {
                     Some(v) => v,
@@ -374,28 +374,22 @@ impl ClangSubItemParser for Var {
 /// Try and parse a macro using all the macros parsed until now.
 fn parse_macro(
     ctx: &BindgenContext,
-    cursor: &clang::Cursor,
+    cexpr_tokens: &[cexpr::token::Token],
 ) -> Option<(Vec<u8>, cexpr::expr::EvalResult)> {
     use cexpr::expr;
 
-    let mut cexpr_tokens = cursor.cexpr_tokens();
-
     let parser = expr::IdentifierParser::new(ctx.parsed_macros());
 
-    match parser.macro_definition(&cexpr_tokens) {
-        Ok((_, (id, val))) => {
-            return Some((id.into(), val));
-        }
-        _ => {}
-    }
-
-    // Try without the last token, to workaround a libclang bug in versions
-    // previous to 4.0.
+    // Drop last token with LLVM < 4.0, due to an LLVM bug.
     //
     // See:
     //   https://bugs.llvm.org//show_bug.cgi?id=9069
     //   https://reviews.llvm.org/D26446
-    cexpr_tokens.pop()?;
+    let cexpr_tokens = match (cexpr_tokens.len(), crate::clang_version().parsed)
+    {
+        (len, Some((v, _))) if len > 0 && v < 4 => &cexpr_tokens[..len - 1],
+        _ => &cexpr_tokens[..],
+    };
 
     match parser.macro_definition(&cexpr_tokens) {
         Ok((_, (id, val))) => Some((id.into(), val)),

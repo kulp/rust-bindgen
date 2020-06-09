@@ -193,6 +193,8 @@ impl ClangSubItemParser for Var {
         use clang_sys::*;
         match cursor.kind() {
             CXCursor_MacroDefinition => {
+                let tokens: Vec<_> = cursor.tokens().iter().collect();
+
                 if let Some(callbacks) = ctx.parse_callbacks() {
                     match callbacks.will_parse_macro(&cursor.spelling()) {
                         MacroParsingBehavior::Ignore => {
@@ -201,13 +203,12 @@ impl ClangSubItemParser for Var {
                         MacroParsingBehavior::Default => {}
                     }
 
-                    let tokens: Vec<_> = cursor.tokens().iter().collect();
                     handle_function_macro(&tokens, |left, right| {
                         callbacks.func_macro(left, right)
                     })?;
                 }
 
-                let value = parse_macro(ctx, &cursor.cexpr_tokens());
+                let value = parse_macro(ctx, &tokens);
 
                 let (id, value) = match value {
                     Some(v) => v,
@@ -374,7 +375,7 @@ impl ClangSubItemParser for Var {
 /// Try and parse a macro using all the macros parsed until now.
 fn parse_macro(
     ctx: &BindgenContext,
-    cexpr_tokens: &[cexpr::token::Token],
+    tokens: &[clang::ClangToken],
 ) -> Option<(Vec<u8>, cexpr::expr::EvalResult)> {
     use cexpr::expr;
 
@@ -385,12 +386,15 @@ fn parse_macro(
     // See:
     //   https://bugs.llvm.org//show_bug.cgi?id=9069
     //   https://reviews.llvm.org/D26446
-    let cexpr_tokens = match (cexpr_tokens.len(), crate::clang_version().parsed)
-    {
-        (len, Some((v, _))) if len > 0 && v < 4 => &cexpr_tokens[..len - 1],
-        _ => &cexpr_tokens[..],
+    let tokens = match (tokens.len(), crate::clang_version().parsed) {
+        (len, Some((v, _))) if len > 0 && v < 4 => &tokens[..len - 1],
+        _ => &tokens[..],
     };
 
+    let cexpr_tokens: Vec<_> = tokens
+        .iter()
+        .filter_map(|token| token.as_cexpr_token())
+        .collect();
     match parser.macro_definition(&cexpr_tokens) {
         Ok((_, (id, val))) => Some((id.into(), val)),
         _ => None,

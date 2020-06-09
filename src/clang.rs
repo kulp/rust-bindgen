@@ -818,10 +818,13 @@ impl ClangToken {
     /// the next token's left boundary, meaning they have no intervening
     /// whitespace.
     pub fn is_abutting(&self, next: &ClangToken) -> bool {
-        // This comparison makes an narrow assumption about the internal data
-        // format of CXSourceLocation. A more explicit and costly check might
-        // use clang_getSpellingLocation().
-        self.extent.end_int_data == next.extent.begin_int_data
+        let a = unsafe { clang_getRangeEnd(self.extent) };
+        let b = unsafe { clang_getRangeStart(next.extent) };
+
+        let a = SourceLocation { x: a };
+        let b = SourceLocation { x: b };
+
+        a.location() == b.location()
     }
 }
 

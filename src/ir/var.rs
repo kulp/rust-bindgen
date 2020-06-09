@@ -130,13 +130,13 @@ fn default_macro_constant_type(value: i64) -> IntKind {
     }
 }
 
-/// Determines whether a cursor that is pointing into a CXCursor_MacroDefinition
-/// is pointing into a function-like macro. If so, calls the func_macro callback
+/// Determines whether a set of tokens from a CXCursor_MacroDefinition
+/// represent a function-like macro. If so, calls the func_macro callback
 /// and returns `Err(ParseError::Continue)` to signal to skip further
 /// processing.  If version to UTF-8 fails (it is performed only where it should
 /// be infallible), then `Err(ParseError::Continue)` is returned as well.
 fn handle_function_macro(
-    cursor: &clang::Cursor,
+    tokens: &[clang::ClangToken],
     func_macro: impl FnOnce(&str, &[&[u8]]),
 ) -> Result<(), ParseError> {
     // cexpr explicitly does not handle function-like macros, except for a
@@ -144,7 +144,6 @@ fn handle_function_macro(
     // cexpr from ever seeing function-like macros by checking for a parenthesis
     // token immediately adjacent to (that is, abutting) the first token in the
     // macro definition.
-    let tokens: Vec<_> = cursor.tokens().iter().collect();
     match tokens.get(0..2) {
         Some([first, second]) if first.is_abutting(&second) => {
             // To be doubly sure we are in a function macro definition, we could
@@ -202,7 +201,8 @@ impl ClangSubItemParser for Var {
                         MacroParsingBehavior::Default => {}
                     }
 
-                    handle_function_macro(&cursor, |left, right| {
+                    let tokens: Vec<_> = cursor.tokens().iter().collect();
+                    handle_function_macro(&tokens, |left, right| {
                         callbacks.func_macro(left, right)
                     })?;
                 }

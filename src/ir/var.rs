@@ -377,10 +377,8 @@ fn parse_macro(
 ) -> Option<(Vec<u8>, cexpr::expr::EvalResult)> {
     use cexpr::expr;
 
-    let mut cexpr_tokens: Vec<_> = tokens
-        .iter()
-        .filter_map(|t| t.as_cexpr_token())
-        .collect();
+    let mut cexpr_tokens: Vec<_> =
+        tokens.iter().filter_map(|t| t.as_cexpr_token()).collect();
 
     let parser = expr::IdentifierParser::new(ctx.parsed_macros());
 

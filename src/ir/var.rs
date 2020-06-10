@@ -137,7 +137,7 @@ fn default_macro_constant_type(value: i64) -> IntKind {
 /// be infallible), then `Err(ParseError::Continue)` is returned as well.
 fn handle_function_macro(
     tokens: &[clang::ClangToken],
-    func_macro: impl FnOnce(&str, &[&[u8]]),
+    callbacks: &dyn crate::callbacks::ParseCallbacks,
 ) -> Result<(), ParseError> {
     // cexpr explicitly does not handle function-like macros, except for a
     // degenerate case in which it behaves in a non-conformant way. We prevent
@@ -174,7 +174,7 @@ fn handle_function_macro(
                 (len, Some((v, _))) if len > 0 && v < 4 => &right[..len - 1],
                 _ => &right[..],
             };
-            func_macro(&left, right);
+            callbacks.func_macro(&left, right);
 
             // We handled the macro, skip future macro processing.
             Err(ParseError::Continue)
@@ -203,9 +203,7 @@ impl ClangSubItemParser for Var {
                         MacroParsingBehavior::Default => {}
                     }
 
-                    handle_function_macro(&tokens, |left, right| {
-                        callbacks.func_macro(left, right)
-                    })?;
+                    handle_function_macro(&tokens, callbacks)?;
                 }
 
                 let value = parse_macro(ctx, &tokens);

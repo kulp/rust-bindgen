@@ -696,14 +696,6 @@ impl Cursor {
         RawTokens::new(self)
     }
 
-    /// Gets the tokens that correspond to that cursor as  `cexpr` tokens.
-    pub fn cexpr_tokens(self) -> Vec<cexpr::token::Token> {
-        self.tokens()
-            .iter()
-            .filter_map(|token| token.as_cexpr_token())
-            .collect()
-    }
-
     /// Obtain the real path name of a cursor of InclusionDirective kind.
     ///
     /// Returns None if the cursor does not include a file, otherwise the file's full name

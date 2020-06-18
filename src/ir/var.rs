@@ -148,20 +148,19 @@ fn handle_function_macro(
         Some([first, second])
             if first.is_abutting(&second) && second.spelling() == b"(" =>
         {
-            let joined: Vec<_> = tokens
-                .into_iter()
-                .map(clang::ClangToken::spelling)
-                .collect();
+            let mut joined =
+                tokens.into_iter().map(clang::ClangToken::spelling);
             let boundary = joined
-                .iter()
+                .clone() // clone the iterator to avoid consuming elements
                 .position(|s| s == b")")
                 .map(|n| n + 1) // skip past ')'
                 .unwrap_or(joined.len());
 
-            let (left, right) = joined.split_at(boundary);
-            let left = String::from_utf8(left.concat())
-                .map_err(|_| ParseError::Continue)?;
-            let right = right.iter().cloned();
+            let left = joined.by_ref().take(boundary);
+            let left = left.collect::<Vec<_>>().concat();
+            let left =
+                String::from_utf8(left).map_err(|_| ParseError::Continue)?;
+            let right = joined;
             // Drop last token with LLVM < 4.0, due to an LLVM bug.
             //
             // See:

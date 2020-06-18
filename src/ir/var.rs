@@ -148,19 +148,19 @@ fn handle_function_macro(
         Some([first, second])
             if first.is_abutting(&second) && second.spelling() == b"(" =>
         {
-            let mut joined =
+            let mut spelled =
                 tokens.into_iter().map(clang::ClangToken::spelling);
-            let boundary = joined
+            let boundary = spelled
                 .clone() // clone the iterator to avoid consuming elements
                 .position(|s| s == b")")
-                .unwrap_or(joined.len());
+                .unwrap_or(spelled.len());
 
             // Add 1, to convert index to length.
-            let left = joined.by_ref().take(boundary + 1);
+            let left = spelled.by_ref().take(boundary + 1);
             let left = left.collect::<Vec<_>>().concat();
             let left =
                 String::from_utf8(left).map_err(|_| ParseError::Continue)?;
-            let right = joined;
+            let right = spelled;
             // Drop last token with LLVM < 4.0, due to an LLVM bug.
             //
             // See:

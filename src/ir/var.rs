@@ -150,7 +150,7 @@ fn handle_function_macro(
         {
             let joined: Vec<_> = tokens
                 .into_iter()
-                .map(|t| t.spelling().to_owned())
+                .map(clang::ClangToken::spelling)
                 .collect();
             let boundary = joined
                 .iter()
@@ -161,7 +161,7 @@ fn handle_function_macro(
             let (left, right) = joined.split_at(boundary);
             let left = String::from_utf8(left.concat())
                 .map_err(|_| ParseError::Continue)?;
-            let right: Vec<_> = right.iter().map(Vec::as_slice).collect();
+            let right: Vec<_> = right.iter().cloned().collect();
             // Drop last token with LLVM < 4.0, due to an LLVM bug.
             //
             // See:

@@ -133,8 +133,8 @@ fn default_macro_constant_type(value: i64) -> IntKind {
 /// Determines whether a set of tokens from a CXCursor_MacroDefinition
 /// represent a function-like macro. If so, calls the func_macro callback
 /// and returns `Err(ParseError::Continue)` to signal to skip further
-/// processing.  If version to UTF-8 fails (it is performed only where it should
-/// be infallible), then `Err(ParseError::Continue)` is returned as well.
+/// processing.  If conversion to UTF-8 fails (it is performed only where it
+/// should be infallible), then `Err(ParseError::Continue)` is returned as well.
 fn handle_function_macro(
     tokens: &[clang::ClangToken],
     callbacks: &dyn crate::callbacks::ParseCallbacks,

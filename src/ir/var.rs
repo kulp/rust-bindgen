@@ -139,22 +139,20 @@ fn handle_function_macro(
     tokens: &[clang::ClangToken],
     callbacks: &dyn crate::callbacks::ParseCallbacks,
 ) -> Result<(), ParseError> {
+    let mut spelled = tokens.into_iter().map(clang::ClangToken::spelling);
+    let boundary = spelled
+        .clone() // clone the iterator to avoid consuming elements
+        .position(|s| s == b")");
+
     // cexpr explicitly does not handle function-like macros, except for a
     // degenerate case in which it behaves in a non-conformant way. We prevent
     // cexpr from ever seeing function-like macros by checking for a parenthesis
     // token immediately adjacent to (that is, abutting) the first token in the
     // macro definition.
-    match tokens.get(0..2) {
-        Some([first, second])
+    match (tokens.get(0..2), boundary) {
+        (Some([first, second]), Some(boundary))
             if first.is_abutting(&second) && second.spelling() == b"(" =>
         {
-            let mut spelled =
-                tokens.into_iter().map(clang::ClangToken::spelling);
-            let boundary = spelled
-                .clone() // clone the iterator to avoid consuming elements
-                .position(|s| s == b")")
-                .unwrap_or(spelled.len());
-
             // Add 1, to convert index to length.
             let left = spelled.by_ref().take(boundary + 1);
             let left = left.collect::<Vec<_>>().concat();

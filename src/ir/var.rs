@@ -407,11 +407,7 @@ fn parse_int_literal_tokens(cursor: &clang::Cursor) -> Option<i64> {
     use cexpr::expr;
     use cexpr::expr::EvalResult;
 
-    let cexpr_tokens: Vec<_> = cursor
-        .tokens()
-        .iter()
-        .filter_map(|t| t.as_cexpr_token())
-        .collect();
+    let cexpr_tokens = cursor.cexpr_tokens();
 
     // TODO(emilio): We can try to parse other kinds of literals.
     match expr::expr(&cexpr_tokens) {

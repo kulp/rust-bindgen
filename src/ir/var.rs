@@ -161,16 +161,17 @@ fn handle_function_macro(
             let (left, right) = joined.split_at(boundary);
             let left = String::from_utf8(left.concat())
                 .map_err(|_| ParseError::Continue)?;
-            let right: Vec<_> = right.iter().cloned().collect();
+            let right = right.iter().cloned();
             // Drop last token with LLVM < 4.0, due to an LLVM bug.
             //
             // See:
             //   https://bugs.llvm.org//show_bug.cgi?id=9069
-            let right = match (right.len(), crate::clang_version().parsed) {
-                (len, Some((v, _))) if len > 0 && v < 4 => &right[..len - 1],
-                _ => &right[..],
+            let len = match (right.len(), crate::clang_version().parsed) {
+                (len, Some((v, _))) if len > 0 && v < 4 => len - 1,
+                (len, _) => len,
             };
-            callbacks.func_macro(&left, right);
+            let right: Vec<_> = right.take(len).collect();
+            callbacks.func_macro(&left, &right);
 
             // We handled the macro, skip future macro processing.
             Err(ParseError::Continue)

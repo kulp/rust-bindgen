@@ -153,10 +153,10 @@ fn handle_function_macro(
             let boundary = joined
                 .clone() // clone the iterator to avoid consuming elements
                 .position(|s| s == b")")
-                .map(|n| n + 1) // skip past ')'
                 .unwrap_or(joined.len());
 
-            let left = joined.by_ref().take(boundary);
+            // Add 1, to convert index to length.
+            let left = joined.by_ref().take(boundary + 1);
             let left = left.collect::<Vec<_>>().concat();
             let left =
                 String::from_utf8(left).map_err(|_| ParseError::Continue)?;

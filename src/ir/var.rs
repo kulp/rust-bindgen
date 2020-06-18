@@ -145,13 +145,9 @@ fn handle_function_macro(
     // token immediately adjacent to (that is, abutting) the first token in the
     // macro definition.
     match tokens.get(0..2) {
-        Some([first, second]) if first.is_abutting(&second) => {
-            // To be doubly sure we are in a function macro definition, we could
-            // check the second macro's type and content, but in order for the
-            // first two macros after `#define` to be adjacent with no
-            // intervening space, the second one has to be an open parenthesis
-            // anyway, so the fact that this code is executing at all implies
-            // that we are defining a function macro.
+        Some([first, second])
+            if first.is_abutting(&second) && second.spelling() == b"(" =>
+        {
             let joined: Vec<_> = tokens
                 .into_iter()
                 .map(|t| t.spelling().to_owned())

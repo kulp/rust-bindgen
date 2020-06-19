@@ -8,6 +8,7 @@ use super::item::Item;
 use super::ty::{FloatKind, TypeKind};
 use crate::callbacks::MacroParsingBehavior;
 use crate::clang;
+use crate::clang::ClangToken;
 use crate::parse::{
     ClangItemParser, ClangSubItemParser, ParseError, ParseResult,
 };
@@ -136,10 +137,10 @@ fn default_macro_constant_type(value: i64) -> IntKind {
 /// processing.  If conversion to UTF-8 fails (it is performed only where it
 /// should be infallible), then `Err(ParseError::Continue)` is returned as well.
 fn handle_function_macro(
-    tokens: &[clang::ClangToken],
+    tokens: &[ClangToken],
     callbacks: &dyn crate::callbacks::ParseCallbacks,
 ) -> Result<(), ParseError> {
-    let mut spelled = tokens.into_iter().map(clang::ClangToken::spelling);
+    let mut spelled = tokens.into_iter().map(ClangToken::spelling);
     let boundary = spelled
         .clone() // clone the iterator to avoid consuming elements
         .position(|s| s == b")");
@@ -367,12 +368,14 @@ impl ClangSubItemParser for Var {
 /// Try and parse a macro using all the macros parsed until now.
 fn parse_macro(
     ctx: &BindgenContext,
-    tokens: &[clang::ClangToken],
+    tokens: &[ClangToken],
 ) -> Option<(Vec<u8>, cexpr::expr::EvalResult)> {
     use cexpr::expr;
 
-    let mut cexpr_tokens: Vec<_> =
-        tokens.iter().filter_map(|t| t.as_cexpr_token()).collect();
+    let mut cexpr_tokens: Vec<_> = tokens
+        .iter()
+        .filter_map(clang::ClangToken::as_cexpr_token)
+        .collect();
 
     let parser = expr::IdentifierParser::new(ctx.parsed_macros());
 

@@ -374,7 +374,7 @@ fn parse_macro(
 
     let mut cexpr_tokens: Vec<_> = tokens
         .iter()
-        .filter_map(clang::ClangToken::as_cexpr_token)
+        .filter_map(ClangToken::as_cexpr_token)
         .collect();
 
     let parser = expr::IdentifierParser::new(ctx.parsed_macros());

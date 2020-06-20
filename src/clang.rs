@@ -808,13 +808,12 @@ impl ClangToken {
     /// the next token's left boundary, meaning they have no intervening
     /// whitespace.
     pub fn is_abutting(&self, next: &ClangToken) -> bool {
-        let a = unsafe { clang_getRangeEnd(self.extent) };
-        let b = unsafe { clang_getRangeStart(next.extent) };
-
-        let a = SourceLocation { x: a };
-        let b = SourceLocation { x: b };
-
-        a.location() == b.location()
+        unsafe {
+            clang_equalLocations(
+                clang_getRangeEnd(self.extent),
+                clang_getRangeStart(next.extent),
+            ) != 0
+        }
     }
 
     /// Converts a ClangToken to a `cexpr` token if possible.

@@ -134,7 +134,7 @@ fn default_macro_constant_type(value: i64) -> IntKind {
 /// Determines whether a set of tokens from a CXCursor_MacroDefinition
 /// represent a function-like macro. If so, calls the func_macro callback
 /// and returns `Err(ParseError::Continue)` to signal to skip further
-/// processing.  If conversion to UTF-8 fails (it is performed only where it
+/// processing. If conversion to UTF-8 fails (it is performed only where it
 /// should be infallible), then `Err(ParseError::Continue)` is returned as well.
 fn handle_function_macro(
     cursor: &clang::Cursor,
@@ -154,9 +154,7 @@ fn handle_function_macro(
         // If we have libclang >= 3.9, we can use `is_macro_function_like()` and
         // avoid checking for abutting tokens ourselves.
         cursor.is_macro_function_like().unwrap_or_else(|| {
-            // cexpr explicitly does not handle function-like macros, except for
-            // a degenerate case in which it behaves in a non-conformant way. We
-            // prevent cexpr from ever seeing function-like macros by checking
+            // If we cannot get a definitive answer from clang, we instead check
             // for a parenthesis token immediately adjacent to (that is,
             // abutting) the first token in the macro definition.
             match tokens.get(0..2) {

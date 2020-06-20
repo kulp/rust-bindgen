@@ -137,6 +137,7 @@ fn default_macro_constant_type(value: i64) -> IntKind {
 /// processing.  If conversion to UTF-8 fails (it is performed only where it
 /// should be infallible), then `Err(ParseError::Continue)` is returned as well.
 fn handle_function_macro(
+    cursor: &clang::Cursor,
     tokens: &[ClangToken],
     callbacks: &dyn crate::callbacks::ParseCallbacks,
 ) -> Result<(), ParseError> {
@@ -145,37 +146,47 @@ fn handle_function_macro(
         .clone() // clone the iterator to avoid consuming elements
         .position(|s| s == b")");
 
-    // cexpr explicitly does not handle function-like macros, except for a
-    // degenerate case in which it behaves in a non-conformant way. We prevent
-    // cexpr from ever seeing function-like macros by checking for a parenthesis
-    // token immediately adjacent to (that is, abutting) the first token in the
-    // macro definition.
-    match (tokens.get(0..2), boundary) {
-        (Some([first, second]), Some(boundary))
-            if first.is_abutting(&second) && second.spelling() == b"(" =>
-        {
-            // Add 1, to convert index to length.
-            let left = spelled.by_ref().take(boundary + 1);
-            let left = left.collect::<Vec<_>>().concat();
-            let left =
-                String::from_utf8(left).map_err(|_| ParseError::Continue)?;
-            let right = spelled;
-            // Drop last token with LLVM < 4.0, due to an LLVM bug.
-            //
-            // See:
-            //   https://bugs.llvm.org//show_bug.cgi?id=9069
-            let len = match (right.len(), crate::clang_version().parsed) {
-                (len, Some((v, _))) if len > 0 && v < 4 => len - 1,
-                (len, _) => len,
-            };
-            let right: Vec<_> = right.take(len).collect();
-            callbacks.func_macro(&left, &right);
+    let is_functional_macro =
+        // If we have libclang >= 3.9, we can use `is_macro_function_like()` and
+        // avoid checking for abutting tokens ourselves.
+        cursor.is_macro_function_like().unwrap_or_else(|| {
+            // cexpr explicitly does not handle function-like macros, except for
+            // a degenerate case in which it behaves in a non-conformant way. We
+            // prevent cexpr from ever seeing function-like macros by checking
+            // for a parenthesis token immediately adjacent to (that is,
+            // abutting) the first token in the macro definition.
+            match tokens.get(0..2) {
+                Some([a, b]) if a.is_abutting(&b) && b.spelling() == b"(" => {
+                    true
+                }
+                _ => false,
+            }
+        });
 
-            // We handled the macro, skip future macro processing.
-            Err(ParseError::Continue)
-        }
-        _ => Ok(()),
+    if !is_functional_macro {
+        return Ok(());
     }
+
+    // Add 1, to convert index to length.
+    let left = spelled
+        .by_ref()
+        .take(boundary.ok_or(ParseError::Continue)? + 1);
+    let left = left.collect::<Vec<_>>().concat();
+    let left = String::from_utf8(left).map_err(|_| ParseError::Continue)?;
+    let right = spelled;
+    // Drop last token with LLVM < 4.0, due to an LLVM bug.
+    //
+    // See:
+    //   https://bugs.llvm.org//show_bug.cgi?id=9069
+    let len = match (right.len(), crate::clang_version().parsed) {
+        (len, Some((v, _))) if len > 0 && v < 4 => len - 1,
+        (len, _) => len,
+    };
+    let right: Vec<_> = right.take(len).collect();
+    callbacks.func_macro(&left, &right);
+
+    // We handled the macro, skip future macro processing.
+    Err(ParseError::Continue)
 }
 
 impl ClangSubItemParser for Var {
@@ -198,7 +209,7 @@ impl ClangSubItemParser for Var {
                         MacroParsingBehavior::Default => {}
                     }
 
-                    handle_function_macro(&tokens, callbacks)?;
+                    handle_function_macro(&cursor, &tokens, callbacks)?;
                 }
 
                 let value = parse_macro(ctx, &tokens);

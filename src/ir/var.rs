@@ -141,11 +141,6 @@ fn handle_function_macro(
     tokens: &[ClangToken],
     callbacks: &dyn crate::callbacks::ParseCallbacks,
 ) -> Result<(), ParseError> {
-    let mut spelled = tokens.iter().map(ClangToken::spelling);
-    let boundary = spelled
-        .clone() // clone the iterator to avoid consuming elements
-        .position(|s| s == b")");
-
     fn is_abutting(a: &ClangToken, b: &ClangToken) -> bool {
         unsafe {
             clang_sys::clang_equalLocations(
@@ -176,6 +171,13 @@ fn handle_function_macro(
         return Ok(());
     }
 
+    let is_closing_paren = |t: &ClangToken| {
+        // Test cheap token kind before comparing exact spellings.
+        t.kind == clang_sys::CXToken_Punctuation && t.spelling() == b")"
+    };
+    let boundary = tokens.iter().position(is_closing_paren);
+
+    let mut spelled = tokens.iter().map(ClangToken::spelling);
     // Add 1, to convert index to length.
     let left = spelled
         .by_ref()

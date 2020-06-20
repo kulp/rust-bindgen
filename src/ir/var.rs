@@ -160,9 +160,7 @@ fn handle_function_macro(
             // for a parenthesis token immediately adjacent to (that is,
             // abutting) the first token in the macro definition.
             match tokens.get(0..2) {
-                Some([a, b]) if is_abutting(&a, &b) && b.spelling() == b"(" => {
-                    true
-                }
+                Some([a, b]) => is_abutting(&a, &b) && b.spelling() == b"(",
                 _ => false,
             }
         });

@@ -105,6 +105,13 @@ impl ParseCallbacks for MacroCallback {
                 assert_eq!(value, &[b"b", b",", b"a"]);
                 *self.seen_funcs.lock().unwrap() += 1;
             }
+            "TESTMACRO_STRING_FUNC_NON_UTF8(x)" => {
+                assert_eq!(
+                    value,
+                    &[b"(" as &[u8], b"x", b"\"\xff\xff\"", b")"]
+                );
+                *self.seen_funcs.lock().unwrap() += 1;
+            }
             _ => {
                 // The system might provide lots of functional macros.
                 // Ensure we did not miss handling one that we meant to handle.
@@ -123,7 +130,7 @@ impl Drop for MacroCallback {
         );
         assert_eq!(
             *self.seen_funcs.lock().unwrap(),
-            4,
+            5,
             "func_macro handle was not called once for all relevant macros"
         );
     }

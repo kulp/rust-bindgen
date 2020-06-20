@@ -26,6 +26,9 @@ environment:
   - TARGET: msvc
     LLVM_VERSION: 9.0.0
     BINDGEN_FEATURES: testing_only_libclang_9
+  - TARGET: msvc
+    LLVM_VERSION: 10.0.0
+    BINDGEN_FEATURES: testing_only_libclang_10
 
 configuration:
 - stable

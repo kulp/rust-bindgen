@@ -789,8 +789,10 @@ impl<'a> Drop for RawTokens<'a> {
 #[derive(Debug)]
 pub struct ClangToken {
     spelling: CXString,
+    /// The extent of the token. This is the same as the relevant member from
+    /// `CXToken`.
     pub extent: CXSourceRange,
-    /// The kind of token, this is the same as the relevant member from
+    /// The kind of the token. This is the same as the relevant member from
     /// `CXToken`.
     pub kind: CXTokenKind,
 }

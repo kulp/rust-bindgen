@@ -141,7 +141,7 @@ fn handle_function_macro(
     tokens: &[ClangToken],
     callbacks: &dyn crate::callbacks::ParseCallbacks,
 ) -> Result<(), ParseError> {
-    let mut spelled = tokens.into_iter().map(ClangToken::spelling);
+    let mut spelled = tokens.iter().map(ClangToken::spelling);
     let boundary = spelled
         .clone() // clone the iterator to avoid consuming elements
         .position(|s| s == b")");

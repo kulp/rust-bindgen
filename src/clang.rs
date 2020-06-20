@@ -789,7 +789,7 @@ impl<'a> Drop for RawTokens<'a> {
 #[derive(Debug)]
 pub struct ClangToken {
     spelling: CXString,
-    extent: CXSourceRange,
+    pub extent: CXSourceRange,
     /// The kind of token, this is the same as the relevant member from
     /// `CXToken`.
     pub kind: CXTokenKind,
@@ -802,18 +802,6 @@ impl ClangToken {
             CStr::from_ptr(clang_getCString(self.spelling) as *const _)
         };
         c_str.to_bytes()
-    }
-
-    /// Tests whether a token's right boundary (CXSourceLocation) is the same as
-    /// the next token's left boundary, meaning they have no intervening
-    /// whitespace.
-    pub fn is_abutting(&self, next: &ClangToken) -> bool {
-        unsafe {
-            clang_equalLocations(
-                clang_getRangeEnd(self.extent),
-                clang_getRangeStart(next.extent),
-            ) != 0
-        }
     }
 
     /// Converts a ClangToken to a `cexpr` token if possible.

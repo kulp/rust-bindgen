@@ -75,11 +75,11 @@ base_url=`llvm_base_url ${LLVM_VERSION_TRIPLE}`
 
 if [ "${TRAVIS_OS_NAME}" == "linux" ]; then
     llvm_download $base_url `llvm_linux_target_triple ${LLVM_VERSION_TRIPLE}`
-    export LD_LIBRARY_PATH="${LLVM_DIRECTORY}/lib":$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH="${LLVM_DIRECTORY}/lib":${LD_LIBRARY_PATH:-}
 else
     llvm_download $base_url `llvm_macos_target_triple ${LLVM_VERSION_TRIPLE}`
     cp "${LLVM_DIRECTORY}/lib/libclang.dylib" /usr/local/lib/libclang.dylib
-    export DYLD_LIBRARY_PATH="${LLVM_DIRECTORY}/lib":$DYLD_LIBRARY_PATH
+    export DYLD_LIBRARY_PATH="${LLVM_DIRECTORY}/lib":${DYLD_LIBRARY_PATH:-}
 fi
 
 # Subsequent scripts can see the state of `set -eu`, so unset it again.

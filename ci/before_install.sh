@@ -78,7 +78,6 @@ if [ "${TRAVIS_OS_NAME}" == "linux" ]; then
     export LD_LIBRARY_PATH="${LLVM_DIRECTORY}/lib":${LD_LIBRARY_PATH:-}
 else
     llvm_download $base_url `llvm_macos_target_triple ${LLVM_VERSION_TRIPLE}`
-    cp "${LLVM_DIRECTORY}/lib/libclang.dylib" /usr/local/lib/libclang.dylib
     export DYLD_LIBRARY_PATH="${LLVM_DIRECTORY}/lib":${DYLD_LIBRARY_PATH:-}
 fi
 

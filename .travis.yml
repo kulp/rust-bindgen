@@ -64,6 +64,11 @@ env:
 
 matrix:
   fast_finish: true
+  include:
+    - arch: ppc64le
+      env:
+        - LLVM_VERSION="9.0" BINDGEN_JOB="test"         BINDGEN_PROFILE=
+        - LLVM_VERSION="9.0" BINDGEN_JOB="integration"  BINDGEN_PROFILE=
 
 cache:
   directories:

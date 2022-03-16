@@ -104,9 +104,6 @@ get_cargo_args() {
     args+=" --no-default-features"
   fi
   local features=""
-  if [ "$BINDGEN_FEATURE_RUNTIME" == "1"  ]; then
-    features+="runtime"
-  fi
   if [ "$BINDGEN_FEATURE_EXTRA_ASSERTS" == "1"  ]; then
     features+=" testing_only_extra_assertions"
   fi

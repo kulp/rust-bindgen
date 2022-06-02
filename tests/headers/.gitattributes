@@ -1,0 +1,3 @@
+# Tell Github Linguist to avoid counting these C++ test inputs toward
+# statistics.
+*.hpp -linguist-detectable
